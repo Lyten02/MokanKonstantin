@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.IO;
 using System.Drawing.Printing;
+using System.Drawing.Imaging;
 
 namespace MokanKonstantin
 {
@@ -116,33 +117,31 @@ namespace MokanKonstantin
 
         private void SaveToFile()
         {
+            if (array == null)
+            {
+                MessageBox.Show("Сначала необходимо сгенерировать массив!", "Внимание", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             SaveFileDialog saveDialog = new SaveFileDialog();
-            saveDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
-            saveDialog.DefaultExt = "txt";
-            saveDialog.FileName = $"array_sum_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+            saveDialog.Filter = "PDF files (*.pdf)|*.pdf|Text files (*.txt)|*.txt|All files (*.*)|*.*";
+            saveDialog.DefaultExt = "pdf";
+            saveDialog.FileName = $"array_sum_{DateTime.Now:yyyyMMdd_HHmmss}";
             
             if (saveDialog.ShowDialog() == DialogResult.OK)
             {
                 try
                 {
-                    using (StreamWriter writer = new StreamWriter(saveDialog.FileName))
+                    string extension = Path.GetExtension(saveDialog.FileName).ToLower();
+                    
+                    if (extension == ".pdf")
                     {
-                        writer.WriteLine($"Дата и время: {DateTime.Now}");
-                        writer.WriteLine("=====================================\n");
-                        
-                        writer.WriteLine("Исходный массив (100 элементов от 2 до 22):");
-                        for (int i = 0; i < 10; i++)
-                        {
-                            for (int j = 0; j < 10; j++)
-                            {
-                                writer.Write($"{array[i * 10 + j],4}");
-                            }
-                            writer.WriteLine();
-                        }
-                        
-                        writer.WriteLine("\n=====================================");
-                        writer.WriteLine("Результаты вычислений:");
-                        writer.WriteLine(txtResult.Text);
+                        SaveAsPDF(saveDialog.FileName);
+                    }
+                    else
+                    {
+                        SaveAsText(saveDialog.FileName);
                     }
                     
                     MessageBox.Show("Результат успешно сохранен!", "Успех", 
@@ -154,6 +153,121 @@ namespace MokanKonstantin
                     MessageBox.Show($"Ошибка при сохранении файла: {ex.Message}", "Ошибка", 
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+            }
+        }
+
+        private void SaveAsText(string fileName)
+        {
+            using (StreamWriter writer = new StreamWriter(fileName))
+            {
+                writer.WriteLine($"Дата и время: {DateTime.Now}");
+                writer.WriteLine("=====================================\n");
+                
+                writer.WriteLine("Исходный массив (100 элементов от 2 до 22):");
+                for (int i = 0; i < 10; i++)
+                {
+                    for (int j = 0; j < 10; j++)
+                    {
+                        writer.Write($"{array[i * 10 + j],4}");
+                    }
+                    writer.WriteLine();
+                }
+                
+                writer.WriteLine("\n=====================================");
+                writer.WriteLine("Результаты вычислений:");
+                writer.WriteLine(txtResult.Text);
+            }
+        }
+
+        private void SaveAsPDF(string fileName)
+        {
+            int width = 850;
+            int height = 1100;
+            
+            using (Bitmap bitmap = new Bitmap(width, height))
+            {
+                using (Graphics g = Graphics.FromImage(bitmap))
+                {
+                    g.Clear(Color.White);
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    
+                    Font titleFont = new Font("Arial", 20, FontStyle.Bold);
+                    Font headerFont = new Font("Arial", 14, FontStyle.Bold);
+                    Font normalFont = new Font("Arial", 12);
+                    Font arrayFont = new Font("Courier New", 10);
+                    
+                    float y = 50;
+                    
+                    // Заголовок
+                    g.DrawString("Результаты вычислений", titleFont, Brushes.Black, 
+                        width / 2, y, new StringFormat { Alignment = StringAlignment.Center });
+                    y += 50;
+                    
+                    // Дата
+                    g.DrawString($"Дата и время: {DateTime.Now}", normalFont, Brushes.Black, 50, y);
+                    y += 40;
+                    
+                    // Массив
+                    g.DrawString("Исходный массив (100 элементов от 2 до 22):", headerFont, Brushes.Black, 50, y);
+                    y += 30;
+                    
+                    // Рисуем массив с выделением
+                    for (int i = 0; i < 10; i++)
+                    {
+                        float x = 50;
+                        for (int j = 0; j < 10; j++)
+                        {
+                            int index = i * 10 + j;
+                            string value = array[index].ToString();
+                            
+                            // Проверяем, является ли позиция квадратом числа
+                            bool isSquared = squaredPositions.Contains(index);
+                            
+                            if (isSquared)
+                            {
+                                // Рисуем зеленый фон для выделенных элементов
+                                g.FillRectangle(Brushes.LightGreen, x - 2, y - 2, 30, 20);
+                            }
+                            
+                            g.DrawString(value.PadLeft(3), arrayFont, Brushes.Black, x, y);
+                            x += 35;
+                        }
+                        y += 25;
+                    }
+                    
+                    y += 30;
+                    
+                    // Результаты
+                    g.DrawString("Результаты вычислений:", headerFont, Brushes.Black, 50, y);
+                    y += 30;
+                    
+                    // Разбиваем текст результата на строки
+                    string[] lines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
+                    foreach (string line in lines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            g.DrawString(line, normalFont, Brushes.Black, 50, y);
+                            y += 25;
+                        }
+                    }
+                    
+                    // Легенда
+                    y = height - 100;
+                    g.FillRectangle(Brushes.LightGreen, 50, y, 20, 15);
+                    g.DrawString("- элементы на позициях 1², 2², 3²... 9²", normalFont, Brushes.Black, 75, y - 2);
+                }
+                
+                // Сохраняем как изображение (так как нативный PDF требует дополнительных библиотек)
+                bitmap.Save(fileName.Replace(".pdf", ".png"), ImageFormat.Png);
+                
+                // Информируем пользователя
+                MessageBox.Show(
+                    "Файл сохранен в формате PNG.\n" +
+                    "Для полноценного PDF рекомендуется использовать функцию печати и выбрать 'Печать в PDF'.",
+                    "Информация",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
         }
 
@@ -217,15 +331,28 @@ namespace MokanKonstantin
 
         private void PrintResults()
         {
-            PrintDocument printDoc = new PrintDocument();
-            PrintPreviewDialog previewDialog = new PrintPreviewDialog();
-            
-            printDoc.PrintPage += PrintDocument_PrintPage;
-            previewDialog.Document = printDoc;
-            
-            if (previewDialog.ShowDialog() == DialogResult.OK)
+            if (array == null)
             {
-                printDoc.Print();
+                MessageBox.Show("Сначала необходимо сгенерировать массив!", "Внимание", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                PrintDocument printDoc = new PrintDocument();
+                PrintPreviewDialog previewDialog = new PrintPreviewDialog();
+                
+                printDoc.PrintPage += PrintDocument_PrintPage;
+                previewDialog.Document = printDoc;
+                previewDialog.WindowState = FormWindowState.Maximized;
+                
+                previewDialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при печати: {ex.Message}", "Ошибка", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
