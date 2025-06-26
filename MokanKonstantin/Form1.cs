@@ -395,15 +395,72 @@ namespace MokanKonstantin
                 PrintDocument printDoc = new PrintDocument();
                 PrintPreviewDialog previewDialog = new PrintPreviewDialog();
 
+                // Настройки документа
+                printDoc.DocumentName = "Результаты вычислений массива";
+                printDoc.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(50, 50, 50, 50);
+                
+                // Добавляем обработчики событий
                 printDoc.PrintPage += PrintDocument_PrintPage;
+                printDoc.BeginPrint += (s, e) => { /* Инициализация печати */ };
+                printDoc.EndPrint += (s, e) => 
+                {
+                    if (e.PrintAction == PrintAction.PrintToPrinter)
+                    {
+                        MessageBox.Show("Печать завершена", "Информация", 
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                };
+
+                // Настройки диалога предпросмотра
                 previewDialog.Document = printDoc;
                 previewDialog.WindowState = FormWindowState.Maximized;
+                previewDialog.UseAntiAlias = true;
 
-                previewDialog.ShowDialog();
+                // Показываем диалог предпросмотра
+                DialogResult result = previewDialog.ShowDialog();
+                
+                // Печать из диалога предпросмотра обрабатывается автоматически
+                // Дополнительно предложим прямую печать
+                if (result == DialogResult.Cancel)
+                {
+                    var printChoice = MessageBox.Show(
+                        "Хотите напечатать документ без предпросмотра?", 
+                        "Печать", 
+                        MessageBoxButtons.YesNo, 
+                        MessageBoxIcon.Question);
+                        
+                    if (printChoice == DialogResult.Yes)
+                    {
+                        PrintDialog printDialog = new PrintDialog();
+                        printDialog.Document = printDoc;
+                        printDialog.UseEXDialog = true;
+                        
+                        if (printDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            try
+                            {
+                                printDoc.PrinterSettings = printDialog.PrinterSettings;
+                                printDoc.Print();
+                            }
+                            catch (Exception printEx)
+                            {
+                                MessageBox.Show(
+                                    $"Ошибка при отправке на печать: {printEx.Message}\n\n" +
+                                    "Попробуйте:\n" +
+                                    "1. Проверить подключение принтера\n" +
+                                    "2. Установить принтер по умолчанию\n" +
+                                    "3. Сохранить документ в PDF и печатать из PDF-просмотрщика",
+                                    "Ошибка печати",
+                                    MessageBoxButtons.OK, 
+                                    MessageBoxIcon.Error);
+                            }
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при печати: {ex.Message}", "Ошибка",
+                MessageBox.Show($"Ошибка при подготовке печати: {ex.Message}", "Ошибка",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
