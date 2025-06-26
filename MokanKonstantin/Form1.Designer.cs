@@ -96,21 +96,21 @@ namespace MokanKonstantin
             this.loadMenuItem.Name = "loadMenuItem";
             this.loadMenuItem.Size = new System.Drawing.Size(173, 22);
             this.loadMenuItem.Text = "Загрузить данные";
-            this.loadMenuItem.Click += new System.EventHandler((s, e) => LoadFromFile());
+            this.loadMenuItem.Click += new System.EventHandler(this.loadMenuItem_Click);
             // 
             // saveMenuItem
             // 
             this.saveMenuItem.Name = "saveMenuItem";
             this.saveMenuItem.Size = new System.Drawing.Size(173, 22);
             this.saveMenuItem.Text = "Сохранить результат";
-            this.saveMenuItem.Click += new System.EventHandler((s, e) => SaveToFile());
+            this.saveMenuItem.Click += new System.EventHandler(this.saveMenuItem_Click);
             // 
             // printMenuItem
             // 
             this.printMenuItem.Name = "printMenuItem";
             this.printMenuItem.Size = new System.Drawing.Size(173, 22);
             this.printMenuItem.Text = "Печать";
-            this.printMenuItem.Click += new System.EventHandler((s, e) => PrintResults());
+            this.printMenuItem.Click += new System.EventHandler(this.printMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
@@ -122,7 +122,7 @@ namespace MokanKonstantin
             this.exitMenuItem.Name = "exitMenuItem";
             this.exitMenuItem.Size = new System.Drawing.Size(173, 22);
             this.exitMenuItem.Text = "Выход";
-            this.exitMenuItem.Click += new System.EventHandler((s, e) => ExitApplication());
+            this.exitMenuItem.Click += new System.EventHandler(this.exitMenuItem_Click);
             // 
             // helpMenuItem
             // 
@@ -139,21 +139,21 @@ namespace MokanKonstantin
             this.aboutMenuItem.Name = "aboutMenuItem";
             this.aboutMenuItem.Size = new System.Drawing.Size(149, 22);
             this.aboutMenuItem.Text = "О программе";
-            this.aboutMenuItem.Click += new System.EventHandler((s, e) => ShowAbout());
+            this.aboutMenuItem.Click += new System.EventHandler(this.aboutMenuItem_Click);
             // 
             // versionMenuItem
             // 
             this.versionMenuItem.Name = "versionMenuItem";
             this.versionMenuItem.Size = new System.Drawing.Size(149, 22);
             this.versionMenuItem.Text = "Версия";
-            this.versionMenuItem.Click += new System.EventHandler((s, e) => MessageBox.Show("Версия: 1.0.0", "Версия программы", MessageBoxButtons.OK, MessageBoxIcon.Information));
+            this.versionMenuItem.Click += new System.EventHandler(this.versionMenuItem_Click);
             // 
             // instructionMenuItem
             // 
             this.instructionMenuItem.Name = "instructionMenuItem";
             this.instructionMenuItem.Size = new System.Drawing.Size(149, 22);
             this.instructionMenuItem.Text = "Инструкция";
-            this.instructionMenuItem.Click += new System.EventHandler((s, e) => ShowHelp());
+            this.instructionMenuItem.Click += new System.EventHandler(this.instructionMenuItem_Click);
             // 
             // mainPanel
             // 
@@ -274,7 +274,7 @@ namespace MokanKonstantin
             this.btnPrint.TabIndex = 3;
             this.btnPrint.Text = "🖨️ Печать результата";
             this.btnPrint.UseVisualStyleBackColor = true;
-            this.btnPrint.Click += new System.EventHandler((s, e) => PrintResults());
+            this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
             // 
             // btnSave
             // 
@@ -286,7 +286,7 @@ namespace MokanKonstantin
             this.btnSave.TabIndex = 2;
             this.btnSave.Text = "💾 Сохранить в файл";
             this.btnSave.UseVisualStyleBackColor = true;
-            this.btnSave.Click += new System.EventHandler((s, e) => SaveToFile());
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
             // btnCalculate
             // 
@@ -298,7 +298,7 @@ namespace MokanKonstantin
             this.btnCalculate.TabIndex = 1;
             this.btnCalculate.Text = "🧮 Вычислить сумму";
             this.btnCalculate.UseVisualStyleBackColor = true;
-            this.btnCalculate.Click += new System.EventHandler((s, e) => CalculateSum());
+            this.btnCalculate.Click += new System.EventHandler(this.btnCalculate_Click);
             // 
             // btnGenerate
             // 
@@ -309,7 +309,7 @@ namespace MokanKonstantin
             this.btnGenerate.TabIndex = 0;
             this.btnGenerate.Text = "🔄 Сгенерировать массив";
             this.btnGenerate.UseVisualStyleBackColor = true;
-            this.btnGenerate.Click += new System.EventHandler((s, e) => GenerateArray());
+            this.btnGenerate.Click += new System.EventHandler(this.btnGenerate_Click);
             // 
             // statusStrip
             // 
