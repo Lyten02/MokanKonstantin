@@ -125,7 +125,7 @@ namespace MokanKonstantin
             }
 
             SaveFileDialog saveDialog = new SaveFileDialog();
-            saveDialog.Filter = "PDF files (*.pdf)|*.pdf|Text files (*.txt)|*.txt|All files (*.*)|*.*";
+            saveDialog.Filter = "PDF files (*.pdf)|*.pdf|PNG Image (*.png)|*.png|Text files (*.txt)|*.txt|All files (*.*)|*.*";
             saveDialog.DefaultExt = "pdf";
             saveDialog.FileName = $"array_sum_{DateTime.Now:yyyyMMdd_HHmmss}";
             
@@ -135,13 +135,17 @@ namespace MokanKonstantin
                 {
                     string extension = Path.GetExtension(saveDialog.FileName).ToLower();
                     
-                    if (extension == ".pdf")
+                    switch (extension)
                     {
-                        SaveAsPDF(saveDialog.FileName);
-                    }
-                    else
-                    {
-                        SaveAsText(saveDialog.FileName);
+                        case ".pdf":
+                            SaveAsPDF(saveDialog.FileName);
+                            break;
+                        case ".png":
+                            SaveAsPNG(saveDialog.FileName);
+                            break;
+                        default:
+                            SaveAsText(saveDialog.FileName);
+                            break;
                     }
                     
                     MessageBox.Show("Результат успешно сохранен!", "Успех", 
@@ -180,6 +184,52 @@ namespace MokanKonstantin
         }
 
         private void SaveAsPDF(string fileName)
+        {
+            try
+            {
+                PrintDocument printDoc = new PrintDocument();
+                printDoc.PrinterSettings.PrinterName = "Microsoft Print to PDF";
+                printDoc.PrinterSettings.PrintToFile = true;
+                printDoc.PrinterSettings.PrintFileName = fileName;
+                printDoc.DefaultPageSettings.Landscape = false;
+                printDoc.PrintPage += PrintDocument_PrintPage;
+                
+                // Проверяем, установлен ли PDF принтер
+                bool pdfPrinterFound = false;
+                foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+                {
+                    if (printer.Contains("PDF"))
+                    {
+                        pdfPrinterFound = true;
+                        break;
+                    }
+                }
+                
+                if (pdfPrinterFound)
+                {
+                    printDoc.Print();
+                }
+                else
+                {
+                    // Если PDF принтер не найден, сохраняем как PNG
+                    MessageBox.Show(
+                        "PDF принтер не найден. Файл будет сохранен в формате PNG.\n" +
+                        "Для сохранения в PDF используйте функцию печати.",
+                        "Информация",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                    
+                    SaveAsPNG(fileName.Replace(".pdf", ".png"));
+                }
+            }
+            catch (Exception)
+            {
+                // В случае ошибки сохраняем как PNG
+                SaveAsPNG(fileName.Replace(".pdf", ".png"));
+            }
+        }
+
+        private void SaveAsPNG(string fileName)
         {
             int width = 850;
             int height = 1100;
@@ -258,16 +308,8 @@ namespace MokanKonstantin
                     g.DrawString("- элементы на позициях 1², 2², 3²... 9²", normalFont, Brushes.Black, 75, y - 2);
                 }
                 
-                // Сохраняем как изображение (так как нативный PDF требует дополнительных библиотек)
-                bitmap.Save(fileName.Replace(".pdf", ".png"), ImageFormat.Png);
-                
-                // Информируем пользователя
-                MessageBox.Show(
-                    "Файл сохранен в формате PNG.\n" +
-                    "Для полноценного PDF рекомендуется использовать функцию печати и выбрать 'Печать в PDF'.",
-                    "Информация",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                // Сохраняем изображение
+                bitmap.Save(fileName, ImageFormat.Png);
             }
         }
 
