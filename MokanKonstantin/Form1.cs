@@ -391,7 +391,6 @@ namespace MokanKonstantin
                 return;
             }
 
-            // Предлагаем выбор метода печати
             var printMethod = MessageBox.Show(
                 "Выберите метод печати:\n\n" +
                 "ДА - Печать через браузер (рекомендуется)\n" +
@@ -406,30 +405,24 @@ namespace MokanKonstantin
 
             if (printMethod == DialogResult.Yes)
             {
-                // Печать через браузер - 100% рабочий способ
                 PrintViaHTML();
             }
             else
             {
-                // Стандартная печать Windows
                 try
                 {
                     PrintDocument printDoc = new PrintDocument();
                     PrintPreviewDialog previewDialog = new PrintPreviewDialog();
 
-                    // Настройки документа
                     printDoc.DocumentName = "Результаты вычислений массива";
                     printDoc.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(50, 50, 50, 50);
-                    
-                    // Добавляем обработчик печати страницы
+
                     printDoc.PrintPage += PrintDocument_PrintPage;
 
-                    // Настройки диалога предпросмотра
                     previewDialog.Document = printDoc;
                     previewDialog.WindowState = FormWindowState.Maximized;
                     previewDialog.UseAntiAlias = true;
 
-                    // Показываем диалог предпросмотра
                     previewDialog.ShowDialog();
                 }
                 catch (Exception ex)
@@ -440,9 +433,8 @@ namespace MokanKonstantin
                         "Ошибка",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error);
-                    
-                    // Предлагаем альтернативный способ
-                    if (MessageBox.Show("Попробовать печать через браузер?", "Альтернативный способ", 
+
+                    if (MessageBox.Show("Попробовать печать через браузер?", "Альтернативный способ",
                         MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                     {
                         PrintViaHTML();
@@ -455,20 +447,17 @@ namespace MokanKonstantin
         {
             try
             {
-                // Создаём HTML документ
                 string html = GenerateHTMLReport();
-                
-                // Сохраняем во временный файл
+
                 string tempFile = Path.Combine(Path.GetTempPath(), $"array_report_{DateTime.Now:yyyyMMddHHmmss}.html");
                 File.WriteAllText(tempFile, html);
-                
-                // Открываем в браузере
+
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = tempFile,
                     UseShellExecute = true
                 });
-                
+
                 MessageBox.Show(
                     "Документ открыт в браузере.\n\n" +
                     "Для печати используйте:\n" +
@@ -489,7 +478,7 @@ namespace MokanKonstantin
         private string GenerateHTMLReport()
         {
             StringBuilder html = new StringBuilder();
-            
+
             html.AppendLine("<!DOCTYPE html>");
             html.AppendLine("<html>");
             html.AppendLine("<head>");
@@ -506,16 +495,14 @@ namespace MokanKonstantin
             html.AppendLine("</style>");
             html.AppendLine("</head>");
             html.AppendLine("<body>");
-            
-            // Заголовок
+
             html.AppendLine("<h1>Результаты вычислений массива</h1>");
             html.AppendLine($"<p><strong>Дата и время:</strong> {DateTime.Now}</p>");
             html.AppendLine($"<p><strong>Выполнил:</strong> Мокан Константин, 24 ИС</p>");
-            
-            // Массив
+
             html.AppendLine("<h2>Исходный массив (100 элементов от 2 до 22)</h2>");
             html.AppendLine("<table>");
-            
+
             for (int i = 0; i < 10; i++)
             {
                 html.AppendLine("<tr>");
@@ -528,14 +515,13 @@ namespace MokanKonstantin
                 }
                 html.AppendLine("</tr>");
             }
-            
+
             html.AppendLine("</table>");
             html.AppendLine("<p><span style='background-color: #90EE90; padding: 2px 8px;'>Зелёным</span> выделены элементы на позициях 1², 2², 3²... 9²</p>");
-            
-            // Результаты
+
             html.AppendLine("<div class='result'>");
             html.AppendLine("<h2>Результаты вычислений</h2>");
-            
+
             string[] lines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
             foreach (string line in lines)
             {
@@ -544,18 +530,17 @@ namespace MokanKonstantin
                     html.AppendLine($"<p>{line}</p>");
                 }
             }
-            
+
             html.AppendLine("</div>");
-            
+
             html.AppendLine("</body>");
             html.AppendLine("</html>");
-            
+
             return html.ToString();
         }
 
         private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
         {
-            // ВАЖНО: Проверяем, что есть данные для печати
             if (array == null || array.Length == 0)
             {
                 e.Cancel = true;
@@ -566,25 +551,20 @@ namespace MokanKonstantin
             Font font = new Font("Arial", 12);
             Font titleFont = new Font("Arial", 16, FontStyle.Bold);
             Font arrayFont = new Font("Courier New", 10);
-            
-            // Получаем размеры области печати
+
             Rectangle bounds = e.MarginBounds;
             float y = bounds.Top;
             float x = bounds.Left;
 
-            // Заголовок
             g.DrawString("Результаты вычислений", titleFont, Brushes.Black, x, y);
             y += 40;
 
-            // Дата
             g.DrawString($"Дата: {DateTime.Now}", font, Brushes.Black, x, y);
             y += 30;
 
-            // Заголовок массива
             g.DrawString("Массив (100 элементов от 2 до 22):", font, Brushes.Black, x, y);
             y += 25;
 
-            // Печать массива
             for (int i = 0; i < 10; i++)
             {
                 string line = "";
@@ -598,24 +578,22 @@ namespace MokanKonstantin
             }
 
             y += 20;
-            
-            // Заголовок результатов
+
             g.DrawString("Результаты вычислений:", font, Brushes.Black, x, y);
             y += 25;
 
-            // Печать результатов
             if (!string.IsNullOrEmpty(txtResult.Text))
             {
                 string[] resultLines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
-                
+
                 foreach (string line in resultLines)
                 {
-                    if (y > bounds.Bottom - 50) // Проверяем, не вышли ли за границы страницы
+                    if (y > bounds.Bottom - 50)
                     {
                         e.HasMorePages = true;
                         return;
                     }
-                    
+
                     if (!string.IsNullOrWhiteSpace(line))
                     {
                         g.DrawString(line, font, Brushes.Black, x, y);
@@ -623,13 +601,10 @@ namespace MokanKonstantin
                     }
                 }
             }
-
-            // ВАЖНО: Указываем, что страница напечатана
             e.HasMorePages = false;
-            
-            // Нижний колонтитул
+
             string footer = $"Страница 1 - Программа: Калькулятор суммы элементов массива";
-            g.DrawString(footer, new Font("Arial", 8), Brushes.Gray, 
+            g.DrawString(footer, new Font("Arial", 8), Brushes.Gray,
                 x, bounds.Bottom - 20);
         }
 
