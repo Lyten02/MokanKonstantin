@@ -6,193 +6,191 @@ namespace MokanKonstantin
 {
     public partial class ResultEditorForm : Form
     {
-        private TextBox txtResults;
-        private CheckBox chkIncludeArray;
-        private CheckBox chkIncludeCalculations;
-        private TextBox txtHeader;
-        private TextBox txtFooter;
+        private TextBox txtTemplate;
+        private TextBox txtPreview;
         private Button btnSave;
         private Button btnPrint;
         private Button btnCancel;
-        private Label lblHeader;
-        private Label lblFooter;
-        private Label lblResults;
-        private Panel pnlButtons;
-        private Panel pnlOptions;
+        private Label lblInstructions;
+        private Label lblTemplate;
+        private Label lblPreview;
+        private SplitContainer splitContainer;
 
-        public string EditedResults { get; private set; }
-        public bool IncludeArray { get; private set; }
-        public bool IncludeCalculations { get; private set; }
-        public string CustomHeader { get; private set; }
-        public string CustomFooter { get; private set; }
+        private string arrayData;
+        private string calculationResults;
+        
+        public string EditedTemplate { get; private set; }
         public DialogResult Result { get; private set; }
 
-        public ResultEditorForm(string currentResults, bool includeArray = true, bool includeCalculations = true)
+        public ResultEditorForm(string arrayData, string calculationResults)
         {
+            this.arrayData = arrayData;
+            this.calculationResults = calculationResults;
+            
             InitializeComponent();
+            InitializeDefaultTemplate();
+        }
 
+        private void InitializeDefaultTemplate()
+        {
+            txtTemplate.Text = @"Результаты вычислений массива
+Дата и время: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") + @"
 
-            txtResults.Text = currentResults;
-            chkIncludeArray.Checked = includeArray;
-            chkIncludeCalculations.Checked = includeCalculations;
+Исходный массив (100 элементов от 2 до 22):
+{ARRAY}
 
+Результаты вычислений:
+{RESULTS}
 
-            this.Text = "Edit Results";
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
+Выполнил: Мокан Константин, 24 ИС";
+            
+            UpdatePreview();
         }
 
         private void InitializeComponent()
         {
-
-            this.txtResults = new TextBox();
-            this.chkIncludeArray = new CheckBox();
-            this.chkIncludeCalculations = new CheckBox();
-            this.txtHeader = new TextBox();
-            this.txtFooter = new TextBox();
+            this.txtTemplate = new TextBox();
+            this.txtPreview = new TextBox();
             this.btnSave = new Button();
             this.btnPrint = new Button();
             this.btnCancel = new Button();
-            this.lblHeader = new Label();
-            this.lblFooter = new Label();
-            this.lblResults = new Label();
-            this.pnlButtons = new Panel();
-            this.pnlOptions = new Panel();
-
+            this.lblInstructions = new Label();
+            this.lblTemplate = new Label();
+            this.lblPreview = new Label();
+            this.splitContainer = new SplitContainer();
+            
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).BeginInit();
+            this.splitContainer.Panel1.SuspendLayout();
+            this.splitContainer.Panel2.SuspendLayout();
+            this.splitContainer.SuspendLayout();
             this.SuspendLayout();
 
+            // Form settings
+            this.Text = "Редактор результатов";
+            this.ClientSize = new Size(900, 600);
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MinimumSize = new Size(700, 500);
 
-            this.ClientSize = new Size(600, 500);
+            // lblInstructions
+            this.lblInstructions.Text = "Используйте {ARRAY} для вставки массива и {RESULTS} для вставки результатов:";
+            this.lblInstructions.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblInstructions.Location = new Point(12, 12);
+            this.lblInstructions.Size = new Size(876, 20);
+            this.lblInstructions.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
+            // splitContainer
+            this.splitContainer.Location = new Point(12, 35);
+            this.splitContainer.Size = new Size(876, 515);
+            this.splitContainer.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            this.splitContainer.SplitterDistance = 430;
 
-            this.lblResults.Text = "Results:";
-            this.lblResults.Location = new Point(12, 12);
-            this.lblResults.Size = new Size(100, 20);
+            // lblTemplate
+            this.lblTemplate.Text = "Шаблон:";
+            this.lblTemplate.Location = new Point(3, 3);
+            this.lblTemplate.Size = new Size(100, 20);
 
+            // txtTemplate
+            this.txtTemplate.Multiline = true;
+            this.txtTemplate.ScrollBars = ScrollBars.Both;
+            this.txtTemplate.WordWrap = true;
+            this.txtTemplate.Font = new Font("Consolas", 10F);
+            this.txtTemplate.Location = new Point(3, 26);
+            this.txtTemplate.Size = new Size(424, 450);
+            this.txtTemplate.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            this.txtTemplate.TextChanged += TxtTemplate_TextChanged;
 
-            this.txtResults.Multiline = true;
-            this.txtResults.ScrollBars = ScrollBars.Both;
-            this.txtResults.WordWrap = false;
-            this.txtResults.Font = new Font("Consolas", 9F);
-            this.txtResults.Location = new Point(12, 35);
-            this.txtResults.Size = new Size(576, 250);
-            this.txtResults.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            // lblPreview
+            this.lblPreview.Text = "Предпросмотр:";
+            this.lblPreview.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblPreview.Location = new Point(3, 3);
+            this.lblPreview.Size = new Size(100, 20);
 
+            // txtPreview
+            this.txtPreview.Multiline = true;
+            this.txtPreview.ReadOnly = true;
+            this.txtPreview.ScrollBars = ScrollBars.Both;
+            this.txtPreview.WordWrap = true;
+            this.txtPreview.Font = new Font("Consolas", 10F);
+            this.txtPreview.BackColor = SystemColors.Control;
+            this.txtPreview.Location = new Point(3, 26);
+            this.txtPreview.Size = new Size(439, 450);
+            this.txtPreview.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
 
-            this.pnlOptions.Location = new Point(12, 291);
-            this.pnlOptions.Size = new Size(576, 120);
-            this.pnlOptions.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-
-
-            this.chkIncludeArray.Text = "Include Array in Output";
-            this.chkIncludeArray.Location = new Point(0, 0);
-            this.chkIncludeArray.Size = new Size(200, 24);
-            this.chkIncludeArray.CheckedChanged += ChkIncludeArray_CheckedChanged;
-
-
-            this.chkIncludeCalculations.Text = "Include Calculations in Output";
-            this.chkIncludeCalculations.Location = new Point(220, 0);
-            this.chkIncludeCalculations.Size = new Size(200, 24);
-            this.chkIncludeCalculations.CheckedChanged += ChkIncludeCalculations_CheckedChanged;
-
-
-            this.lblHeader.Text = "Custom Header:";
-            this.lblHeader.Location = new Point(0, 30);
-            this.lblHeader.Size = new Size(100, 20);
-
-            this.txtHeader.Location = new Point(0, 50);
-            this.txtHeader.Size = new Size(576, 20);
-            this.txtHeader.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-
-
-            this.lblFooter.Text = "Custom Footer:";
-            this.lblFooter.Location = new Point(0, 75);
-            this.lblFooter.Size = new Size(100, 20);
-
-            this.txtFooter.Location = new Point(0, 95);
-            this.txtFooter.Size = new Size(576, 20);
-            this.txtFooter.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-
-
-            this.pnlOptions.Controls.Add(this.chkIncludeArray);
-            this.pnlOptions.Controls.Add(this.chkIncludeCalculations);
-            this.pnlOptions.Controls.Add(this.lblHeader);
-            this.pnlOptions.Controls.Add(this.txtHeader);
-            this.pnlOptions.Controls.Add(this.lblFooter);
-            this.pnlOptions.Controls.Add(this.txtFooter);
-
-
-            this.pnlButtons.Location = new Point(12, 417);
-            this.pnlButtons.Size = new Size(576, 40);
-            this.pnlButtons.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-
-
-            this.btnSave.Text = "Save";
-            this.btnSave.Location = new Point(326, 5);
+            // btnSave
+            this.btnSave.Text = "Сохранить";
+            this.btnSave.Location = new Point(650, 556);
             this.btnSave.Size = new Size(80, 30);
             this.btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             this.btnSave.Click += BtnSave_Click;
 
-
-            this.btnPrint.Text = "Print";
-            this.btnPrint.Location = new Point(412, 5);
+            // btnPrint
+            this.btnPrint.Text = "Печать";
+            this.btnPrint.Location = new Point(736, 556);
             this.btnPrint.Size = new Size(80, 30);
             this.btnPrint.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             this.btnPrint.Click += BtnPrint_Click;
 
-
-            this.btnCancel.Text = "Cancel";
-            this.btnCancel.Location = new Point(498, 5);
+            // btnCancel
+            this.btnCancel.Text = "Отмена";
+            this.btnCancel.Location = new Point(822, 556);
             this.btnCancel.Size = new Size(80, 30);
             this.btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            this.btnCancel.DialogResult = DialogResult.Cancel;
             this.btnCancel.Click += BtnCancel_Click;
 
+            // Add controls to panels
+            this.splitContainer.Panel1.Controls.Add(this.lblTemplate);
+            this.splitContainer.Panel1.Controls.Add(this.txtTemplate);
+            this.splitContainer.Panel2.Controls.Add(this.lblPreview);
+            this.splitContainer.Panel2.Controls.Add(this.txtPreview);
 
-            this.pnlButtons.Controls.Add(this.btnSave);
-            this.pnlButtons.Controls.Add(this.btnPrint);
-            this.pnlButtons.Controls.Add(this.btnCancel);
+            // Add controls to form
+            this.Controls.Add(this.lblInstructions);
+            this.Controls.Add(this.splitContainer);
+            this.Controls.Add(this.btnSave);
+            this.Controls.Add(this.btnPrint);
+            this.Controls.Add(this.btnCancel);
 
+            // Tab order
+            this.txtTemplate.TabIndex = 0;
+            this.btnSave.TabIndex = 1;
+            this.btnPrint.TabIndex = 2;
+            this.btnCancel.TabIndex = 3;
 
-            this.Controls.Add(this.lblResults);
-            this.Controls.Add(this.txtResults);
-            this.Controls.Add(this.pnlOptions);
-            this.Controls.Add(this.pnlButtons);
-
-
-            this.txtResults.TabIndex = 0;
-            this.chkIncludeArray.TabIndex = 1;
-            this.chkIncludeCalculations.TabIndex = 2;
-            this.txtHeader.TabIndex = 3;
-            this.txtFooter.TabIndex = 4;
-            this.btnSave.TabIndex = 5;
-            this.btnPrint.TabIndex = 6;
-            this.btnCancel.TabIndex = 7;
-
+            this.splitContainer.Panel1.ResumeLayout(false);
+            this.splitContainer.Panel1.PerformLayout();
+            this.splitContainer.Panel2.ResumeLayout(false);
+            this.splitContainer.Panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).EndInit();
+            this.splitContainer.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
         }
 
-        private void ChkIncludeArray_CheckedChanged(object sender, EventArgs e)
+        private void TxtTemplate_TextChanged(object sender, EventArgs e)
         {
-            UpdateResultsPreview();
+            UpdatePreview();
         }
 
-        private void ChkIncludeCalculations_CheckedChanged(object sender, EventArgs e)
+        private void UpdatePreview()
         {
-            UpdateResultsPreview();
-        }
-
-        private void UpdateResultsPreview()
-        {
-
-
+            string template = txtTemplate.Text;
+            
+            // Заменяем все возможные варианты заполнителей
+            string finalOutput = template
+                .Replace("{ARRAY}", arrayData)
+                .Replace("{RESULTS}", calculationResults)
+                .Replace("{array}", arrayData)
+                .Replace("{results}", calculationResults)
+                .Replace("{printed array}", arrayData)
+                .Replace("{printed result}", calculationResults);
+            
+            txtPreview.Text = finalOutput;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            PrepareResults();
+            EditedTemplate = txtTemplate.Text;
             this.Result = DialogResult.OK;
             this.DialogResult = DialogResult.OK;
             this.Close();
@@ -200,7 +198,7 @@ namespace MokanKonstantin
 
         private void BtnPrint_Click(object sender, EventArgs e)
         {
-            PrepareResults();
+            EditedTemplate = txtTemplate.Text;
             this.Result = DialogResult.Yes;
             this.DialogResult = DialogResult.Yes;
             this.Close();
@@ -213,35 +211,9 @@ namespace MokanKonstantin
             this.Close();
         }
 
-        private void PrepareResults()
-        {
-            EditedResults = txtResults.Text;
-            IncludeArray = chkIncludeArray.Checked;
-            IncludeCalculations = chkIncludeCalculations.Checked;
-            CustomHeader = txtHeader.Text;
-            CustomFooter = txtFooter.Text;
-        }
-
         public string GetFinalOutput()
         {
-            string output = "";
-
-
-            if (!string.IsNullOrWhiteSpace(CustomHeader))
-            {
-                output += CustomHeader + Environment.NewLine + Environment.NewLine;
-            }
-
-
-            output += EditedResults;
-
-
-            if (!string.IsNullOrWhiteSpace(CustomFooter))
-            {
-                output += Environment.NewLine + Environment.NewLine + CustomFooter;
-            }
-
-            return output;
+            return txtPreview.Text;
         }
     }
 }

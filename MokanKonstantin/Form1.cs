@@ -125,9 +125,12 @@ namespace MokanKonstantin
                 return;
             }
 
-            string currentResults = GetFullResultsText();
-            ResultEditorForm editorForm = new ResultEditorForm(currentResults, true, true);
-
+            // Подготавливаем данные для редактора
+            string arrayText = GetArrayText();
+            string resultsText = txtResult.Text;
+            
+            // Показываем редактор
+            var editorForm = new ResultEditorForm(arrayText, resultsText);
             DialogResult editorResult = editorForm.ShowDialog();
 
             if (editorResult == DialogResult.OK || editorResult == DialogResult.Yes)
@@ -169,6 +172,20 @@ namespace MokanKonstantin
             }
         }
 
+        private string GetArrayText()
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    sb.Append(array[i * 10 + j].ToString().PadLeft(4));
+                }
+                if (i < 9) sb.AppendLine();
+            }
+            return sb.ToString();
+        }
+        
         private string GetFullResultsText(bool includeArray = true, bool includeCalculations = true)
         {
             StringBuilder sb = new StringBuilder();
@@ -180,14 +197,8 @@ namespace MokanKonstantin
             if (includeArray && array != null)
             {
                 sb.AppendLine("Исходный массив (100 элементов от 2 до 22):");
-                for (int i = 0; i < 10; i++)
-                {
-                    for (int j = 0; j < 10; j++)
-                    {
-                        sb.Append($"{array[i * 10 + j],4}");
-                    }
-                    sb.AppendLine();
-                }
+                sb.Append(GetArrayText());
+                sb.AppendLine();
                 sb.AppendLine();
                 sb.AppendLine("=====================================");
             }
@@ -203,31 +214,8 @@ namespace MokanKonstantin
 
         private void SaveAsText(string fileName, ResultEditorForm editorForm = null)
         {
-            using StreamWriter writer = new StreamWriter(fileName);
-            
-            if (editorForm != null)
-            {
-                writer.Write(editorForm.GetFinalOutput());
-            }
-            else
-            {
-                writer.WriteLine($"Дата и время: {DateTime.Now}");
-                writer.WriteLine("=====================================\n");
-
-                writer.WriteLine("Исходный массив (100 элементов от 2 до 22):");
-                for (int i = 0; i < 10; i++)
-                {
-                    for (int j = 0; j < 10; j++)
-                    {
-                        writer.Write($"{array[i * 10 + j],4}");
-                    }
-                    writer.WriteLine();
-                }
-
-                writer.WriteLine("\n=====================================");
-                writer.WriteLine("Результаты вычислений:");
-                writer.WriteLine(txtResult.Text);
-            }
+            string content = editorForm != null ? editorForm.GetFinalOutput() : GetFullResultsText();
+            File.WriteAllText(fileName, content);
         }
 
         private void SaveAsPDF(string fileName, ResultEditorForm editorForm = null)
