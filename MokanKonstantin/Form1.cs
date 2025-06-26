@@ -22,7 +22,7 @@ namespace MokanKonstantin
 
         private void InitializeUI()
         {
-            this.Text = "Калькулятор суммы элементов массива";
+            this.Text = "Мокан Константин 24 ИС: Калькулятор суммы элементов массива";
             this.BackColor = Color.WhiteSmoke;
             this.MinimumSize = new Size(900, 600);
 
@@ -454,7 +454,7 @@ namespace MokanKonstantin
             MessageBox.Show(
                 "Калькулятор суммы элементов массива\n\n" +
                 "Версия: 1.0.0\n" +
-                "Разработчик: Константин Мокан\n\n" +
+                "Разработчик: Мокан Константин\n\n" +
                 "Программа вычисляет сумму элементов массива\n" +
                 "на позициях 1², 2², 3²... 9²",
                 "О программе",
