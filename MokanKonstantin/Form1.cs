@@ -4,6 +4,7 @@ using System.Drawing.Imaging;
 using System.Drawing.Printing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace MokanKonstantin
@@ -390,120 +391,246 @@ namespace MokanKonstantin
                 return;
             }
 
-            try
+            // Предлагаем выбор метода печати
+            var printMethod = MessageBox.Show(
+                "Выберите метод печати:\n\n" +
+                "ДА - Печать через браузер (рекомендуется)\n" +
+                "НЕТ - Стандартная печать Windows\n\n" +
+                "Печать через браузер работает надёжнее!",
+                "Выбор метода печати",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question);
+
+            if (printMethod == DialogResult.Cancel)
+                return;
+
+            if (printMethod == DialogResult.Yes)
             {
-                PrintDocument printDoc = new PrintDocument();
-                PrintPreviewDialog previewDialog = new PrintPreviewDialog();
-
-                // Настройки документа
-                printDoc.DocumentName = "Результаты вычислений массива";
-                printDoc.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(50, 50, 50, 50);
-                
-                // Добавляем обработчики событий
-                printDoc.PrintPage += PrintDocument_PrintPage;
-                printDoc.BeginPrint += (s, e) => { /* Инициализация печати */ };
-                printDoc.EndPrint += (s, e) => 
+                // Печать через браузер - 100% рабочий способ
+                PrintViaHTML();
+            }
+            else
+            {
+                // Стандартная печать Windows
+                try
                 {
-                    if (e.PrintAction == PrintAction.PrintToPrinter)
-                    {
-                        MessageBox.Show("Печать завершена", "Информация", 
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                };
+                    PrintDocument printDoc = new PrintDocument();
+                    PrintPreviewDialog previewDialog = new PrintPreviewDialog();
 
-                // Настройки диалога предпросмотра
-                previewDialog.Document = printDoc;
-                previewDialog.WindowState = FormWindowState.Maximized;
-                previewDialog.UseAntiAlias = true;
+                    // Настройки документа
+                    printDoc.DocumentName = "Результаты вычислений массива";
+                    printDoc.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(50, 50, 50, 50);
+                    
+                    // Добавляем обработчик печати страницы
+                    printDoc.PrintPage += PrintDocument_PrintPage;
 
-                // Показываем диалог предпросмотра
-                DialogResult result = previewDialog.ShowDialog();
-                
-                // Печать из диалога предпросмотра обрабатывается автоматически
-                // Дополнительно предложим прямую печать
-                if (result == DialogResult.Cancel)
+                    // Настройки диалога предпросмотра
+                    previewDialog.Document = printDoc;
+                    previewDialog.WindowState = FormWindowState.Maximized;
+                    previewDialog.UseAntiAlias = true;
+
+                    // Показываем диалог предпросмотра
+                    previewDialog.ShowDialog();
+                }
+                catch (Exception ex)
                 {
-                    var printChoice = MessageBox.Show(
-                        "Хотите напечатать документ без предпросмотра?", 
-                        "Печать", 
-                        MessageBoxButtons.YesNo, 
-                        MessageBoxIcon.Question);
-                        
-                    if (printChoice == DialogResult.Yes)
+                    MessageBox.Show(
+                        $"Ошибка при печати: {ex.Message}\n\n" +
+                        "Попробуйте печать через браузер (рекомендуется)!",
+                        "Ошибка",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    
+                    // Предлагаем альтернативный способ
+                    if (MessageBox.Show("Попробовать печать через браузер?", "Альтернативный способ", 
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                     {
-                        PrintDialog printDialog = new PrintDialog();
-                        printDialog.Document = printDoc;
-                        printDialog.UseEXDialog = true;
-                        
-                        if (printDialog.ShowDialog() == DialogResult.OK)
-                        {
-                            try
-                            {
-                                printDoc.PrinterSettings = printDialog.PrinterSettings;
-                                printDoc.Print();
-                            }
-                            catch (Exception printEx)
-                            {
-                                MessageBox.Show(
-                                    $"Ошибка при отправке на печать: {printEx.Message}\n\n" +
-                                    "Попробуйте:\n" +
-                                    "1. Проверить подключение принтера\n" +
-                                    "2. Установить принтер по умолчанию\n" +
-                                    "3. Сохранить документ в PDF и печатать из PDF-просмотрщика",
-                                    "Ошибка печати",
-                                    MessageBoxButtons.OK, 
-                                    MessageBoxIcon.Error);
-                            }
-                        }
+                        PrintViaHTML();
                     }
                 }
             }
+        }
+
+        private void PrintViaHTML()
+        {
+            try
+            {
+                // Создаём HTML документ
+                string html = GenerateHTMLReport();
+                
+                // Сохраняем во временный файл
+                string tempFile = Path.Combine(Path.GetTempPath(), $"array_report_{DateTime.Now:yyyyMMddHHmmss}.html");
+                File.WriteAllText(tempFile, html);
+                
+                // Открываем в браузере
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = tempFile,
+                    UseShellExecute = true
+                });
+                
+                MessageBox.Show(
+                    "Документ открыт в браузере.\n\n" +
+                    "Для печати используйте:\n" +
+                    "• Ctrl+P или\n" +
+                    "• Меню браузера → Печать\n\n" +
+                    "Это самый надёжный способ печати!",
+                    "Печать через браузер",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при подготовке печати: {ex.Message}", "Ошибка",
+                MessageBox.Show($"Ошибка при создании HTML: {ex.Message}", "Ошибка",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
+        private string GenerateHTMLReport()
+        {
+            StringBuilder html = new StringBuilder();
+            
+            html.AppendLine("<!DOCTYPE html>");
+            html.AppendLine("<html>");
+            html.AppendLine("<head>");
+            html.AppendLine("<meta charset='UTF-8'>");
+            html.AppendLine("<title>Результаты вычислений массива</title>");
+            html.AppendLine("<style>");
+            html.AppendLine("body { font-family: Arial, sans-serif; margin: 20px; }");
+            html.AppendLine("h1 { color: #333; }");
+            html.AppendLine("table { border-collapse: collapse; margin: 20px 0; }");
+            html.AppendLine("td { border: 1px solid #ddd; padding: 8px; text-align: center; width: 40px; }");
+            html.AppendLine(".highlight { background-color: #90EE90; font-weight: bold; }");
+            html.AppendLine(".result { background-color: #f0f0f0; padding: 15px; margin: 20px 0; }");
+            html.AppendLine("@media print { body { margin: 0; } }");
+            html.AppendLine("</style>");
+            html.AppendLine("</head>");
+            html.AppendLine("<body>");
+            
+            // Заголовок
+            html.AppendLine("<h1>Результаты вычислений массива</h1>");
+            html.AppendLine($"<p><strong>Дата и время:</strong> {DateTime.Now}</p>");
+            html.AppendLine($"<p><strong>Выполнил:</strong> Мокан Константин, 24 ИС</p>");
+            
+            // Массив
+            html.AppendLine("<h2>Исходный массив (100 элементов от 2 до 22)</h2>");
+            html.AppendLine("<table>");
+            
+            for (int i = 0; i < 10; i++)
+            {
+                html.AppendLine("<tr>");
+                for (int j = 0; j < 10; j++)
+                {
+                    int index = i * 10 + j;
+                    bool isHighlight = squaredPositions.Contains(index);
+                    string cssClass = isHighlight ? " class='highlight'" : "";
+                    html.AppendLine($"<td{cssClass}>{array[index]}</td>");
+                }
+                html.AppendLine("</tr>");
+            }
+            
+            html.AppendLine("</table>");
+            html.AppendLine("<p><span style='background-color: #90EE90; padding: 2px 8px;'>Зелёным</span> выделены элементы на позициях 1², 2², 3²... 9²</p>");
+            
+            // Результаты
+            html.AppendLine("<div class='result'>");
+            html.AppendLine("<h2>Результаты вычислений</h2>");
+            
+            string[] lines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
+            foreach (string line in lines)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    html.AppendLine($"<p>{line}</p>");
+                }
+            }
+            
+            html.AppendLine("</div>");
+            
+            html.AppendLine("</body>");
+            html.AppendLine("</html>");
+            
+            return html.ToString();
+        }
+
         private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
         {
+            // ВАЖНО: Проверяем, что есть данные для печати
+            if (array == null || array.Length == 0)
+            {
+                e.Cancel = true;
+                return;
+            }
+
             Graphics g = e.Graphics;
             Font font = new Font("Arial", 12);
             Font titleFont = new Font("Arial", 16, FontStyle.Bold);
-            float y = 50;
+            Font arrayFont = new Font("Courier New", 10);
+            
+            // Получаем размеры области печати
+            Rectangle bounds = e.MarginBounds;
+            float y = bounds.Top;
+            float x = bounds.Left;
 
-            g.DrawString("Результаты вычислений", titleFont, Brushes.Black, 50, y);
+            // Заголовок
+            g.DrawString("Результаты вычислений", titleFont, Brushes.Black, x, y);
             y += 40;
 
-            g.DrawString($"Дата: {DateTime.Now}", font, Brushes.Black, 50, y);
+            // Дата
+            g.DrawString($"Дата: {DateTime.Now}", font, Brushes.Black, x, y);
             y += 30;
 
-            g.DrawString("Массив:", font, Brushes.Black, 50, y);
+            // Заголовок массива
+            g.DrawString("Массив (100 элементов от 2 до 22):", font, Brushes.Black, x, y);
             y += 25;
 
+            // Печать массива
             for (int i = 0; i < 10; i++)
             {
                 string line = "";
                 for (int j = 0; j < 10; j++)
                 {
-                    line += $"{array[i * 10 + j],4}";
+                    int index = i * 10 + j;
+                    line += array[index].ToString().PadLeft(4);
                 }
-                g.DrawString(line, new Font("Courier New", 10), Brushes.Black, 50, y);
+                g.DrawString(line, arrayFont, Brushes.Black, x, y);
                 y += 20;
             }
 
             y += 20;
-            g.DrawString("Результаты:", font, Brushes.Black, 50, y);
+            
+            // Заголовок результатов
+            g.DrawString("Результаты вычислений:", font, Brushes.Black, x, y);
             y += 25;
 
-            string[] resultLines = txtResult.Text.Split(new[] { "\r\n" },
-                StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string line in resultLines)
+            // Печать результатов
+            if (!string.IsNullOrEmpty(txtResult.Text))
             {
-                g.DrawString(line, font, Brushes.Black, 50, y);
-                y += 25;
+                string[] resultLines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
+                
+                foreach (string line in resultLines)
+                {
+                    if (y > bounds.Bottom - 50) // Проверяем, не вышли ли за границы страницы
+                    {
+                        e.HasMorePages = true;
+                        return;
+                    }
+                    
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        g.DrawString(line, font, Brushes.Black, x, y);
+                        y += 25;
+                    }
+                }
             }
+
+            // ВАЖНО: Указываем, что страница напечатана
+            e.HasMorePages = false;
+            
+            // Нижний колонтитул
+            string footer = $"Страница 1 - Программа: Калькулятор суммы элементов массива";
+            g.DrawString(footer, new Font("Arial", 8), Brushes.Gray, 
+                x, bounds.Bottom - 20);
         }
 
         private void ShowAbout()
