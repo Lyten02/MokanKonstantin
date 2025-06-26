@@ -325,28 +325,60 @@ namespace MokanKonstantin
                     string[] lines = File.ReadAllLines(openDialog.FileName);
                     array = new int[100];
                     int index = 0;
+                    bool foundArray = false;
                     
-                    foreach (string line in lines)
+                    for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
                     {
-                        if (line.Contains("Исходный массив"))
+                        if (lines[lineIndex].Contains("Исходный массив"))
                         {
-                            for (int i = 0; i < 10 && index < lines.Length; i++)
+                            foundArray = true;
+                            // Пропускаем строку с заголовком и читаем следующие 10 строк
+                            for (int row = 0; row < 10 && lineIndex + row + 1 < lines.Length; row++)
                             {
-                                string dataLine = lines[Array.IndexOf(lines, line) + i + 1];
-                                if (dataLine.Contains("=")) break;
+                                string dataLine = lines[lineIndex + row + 1];
                                 
-                                string[] values = dataLine.Split(new[] { ' ' }, 
+                                // Прерываемся, если встретили разделитель
+                                if (dataLine.Contains("=====")) break;
+                                
+                                // Разбираем строку на числа
+                                string[] values = dataLine.Split(new[] { ' ', '\t' }, 
                                     StringSplitOptions.RemoveEmptyEntries);
                                 
                                 foreach (string val in values)
                                 {
-                                    if (int.TryParse(val, out int num) && index < 100)
+                                    if (int.TryParse(val.Trim(), out int num) && index < 100)
                                     {
                                         array[index++] = num;
                                     }
                                 }
                             }
                             break;
+                        }
+                    }
+                    
+                    if (!foundArray)
+                    {
+                        // Если не нашли заголовок, пробуем читать числа напрямую
+                        index = 0;
+                        foreach (string line in lines)
+                        {
+                            if (line.Contains("=") || line.Contains("Дата") || line.Contains("Результат"))
+                                continue;
+                                
+                            string[] values = line.Split(new[] { ' ', '\t', ',' }, 
+                                StringSplitOptions.RemoveEmptyEntries);
+                            
+                            foreach (string val in values)
+                            {
+                                if (int.TryParse(val.Trim(), out int num) && index < 100)
+                                {
+                                    // Проверяем, что число в диапазоне 2-22
+                                    if (num >= 2 && num <= 22)
+                                    {
+                                        array[index++] = num;
+                                    }
+                                }
+                            }
                         }
                     }
                     
@@ -360,7 +392,7 @@ namespace MokanKonstantin
                     }
                     else
                     {
-                        throw new Exception("Неверный формат файла");
+                        throw new Exception($"Неверный формат файла. Найдено {index} чисел из 100 необходимых.");
                     }
                 }
                 catch (Exception ex)
