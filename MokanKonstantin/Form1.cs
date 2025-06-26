@@ -484,13 +484,12 @@ namespace MokanKonstantin
             }
         }
 
-        // Обработчики событий для Designer
         private void loadMenuItem_Click(object sender, EventArgs e) => LoadFromFile();
         private void saveMenuItem_Click(object sender, EventArgs e) => SaveToFile();
         private void printMenuItem_Click(object sender, EventArgs e) => PrintResults();
         private void exitMenuItem_Click(object sender, EventArgs e) => ExitApplication();
         private void aboutMenuItem_Click(object sender, EventArgs e) => ShowAbout();
-        private void versionMenuItem_Click(object sender, EventArgs e) => 
+        private void versionMenuItem_Click(object sender, EventArgs e) =>
             MessageBox.Show("Версия: 1.0.0", "Версия программы", MessageBoxButtons.OK, MessageBoxIcon.Information);
         private void instructionMenuItem_Click(object sender, EventArgs e) => ShowHelp();
         private void btnGenerate_Click(object sender, EventArgs e) => GenerateArray();
