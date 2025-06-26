@@ -125,64 +125,112 @@ namespace MokanKonstantin
                 return;
             }
 
-            SaveFileDialog saveDialog = new SaveFileDialog();
-            saveDialog.Filter = "PDF files (*.pdf)|*.pdf|PNG Image (*.png)|*.png|Text files (*.txt)|*.txt|All files (*.*)|*.*";
-            saveDialog.DefaultExt = "pdf";
-            saveDialog.FileName = $"array_sum_{DateTime.Now:yyyyMMdd_HHmmss}";
+            string currentResults = GetFullResultsText();
+            ResultEditorForm editorForm = new ResultEditorForm(currentResults, true, true);
 
-            if (saveDialog.ShowDialog() == DialogResult.OK)
+            DialogResult editorResult = editorForm.ShowDialog();
+
+            if (editorResult == DialogResult.OK || editorResult == DialogResult.Yes)
             {
-                try
-                {
-                    string extension = Path.GetExtension(saveDialog.FileName).ToLower();
+                SaveFileDialog saveDialog = new SaveFileDialog();
+                saveDialog.Filter = "PDF files (*.pdf)|*.pdf|PNG Image (*.png)|*.png|Text files (*.txt)|*.txt|All files (*.*)|*.*";
+                saveDialog.DefaultExt = "pdf";
+                saveDialog.FileName = $"array_sum_{DateTime.Now:yyyyMMdd_HHmmss}";
 
-                    switch (extension)
+                if (saveDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
                     {
-                        case ".pdf":
-                            SaveAsPDF(saveDialog.FileName);
-                            break;
-                        case ".png":
-                            SaveAsPNG(saveDialog.FileName);
-                            break;
-                        default:
-                            SaveAsText(saveDialog.FileName);
-                            break;
-                    }
+                        string extension = Path.GetExtension(saveDialog.FileName).ToLower();
 
-                    MessageBox.Show("Результат успешно сохранен!", "Успех",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    lblStatus.Text = "Результат сохранен в файл";
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка при сохранении файла: {ex.Message}", "Ошибка",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        switch (extension)
+                        {
+                            case ".pdf":
+                                SaveAsPDF(saveDialog.FileName, editorForm);
+                                break;
+                            case ".png":
+                                SaveAsPNG(saveDialog.FileName, editorForm);
+                                break;
+                            default:
+                                SaveAsText(saveDialog.FileName, editorForm);
+                                break;
+                        }
+
+                        MessageBox.Show("Результат успешно сохранен!", "Успех",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        lblStatus.Text = "Результат сохранен в файл";
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка при сохранении файла: {ex.Message}", "Ошибка",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
 
-        private void SaveAsText(string fileName)
+        private string GetFullResultsText(bool includeArray = true, bool includeCalculations = true)
+        {
+            StringBuilder sb = new StringBuilder();
+            
+            sb.AppendLine($"Дата и время: {DateTime.Now}");
+            sb.AppendLine("=====================================");
+            sb.AppendLine();
+
+            if (includeArray && array != null)
+            {
+                sb.AppendLine("Исходный массив (100 элементов от 2 до 22):");
+                for (int i = 0; i < 10; i++)
+                {
+                    for (int j = 0; j < 10; j++)
+                    {
+                        sb.Append($"{array[i * 10 + j],4}");
+                    }
+                    sb.AppendLine();
+                }
+                sb.AppendLine();
+                sb.AppendLine("=====================================");
+            }
+
+            if (includeCalculations && !string.IsNullOrEmpty(txtResult.Text))
+            {
+                sb.AppendLine("Результаты вычислений:");
+                sb.AppendLine(txtResult.Text);
+            }
+
+            return sb.ToString();
+        }
+
+        private void SaveAsText(string fileName, ResultEditorForm editorForm = null)
         {
             using StreamWriter writer = new StreamWriter(fileName);
-            writer.WriteLine($"Дата и время: {DateTime.Now}");
-            writer.WriteLine("=====================================\n");
-
-            writer.WriteLine("Исходный массив (100 элементов от 2 до 22):");
-            for (int i = 0; i < 10; i++)
+            
+            if (editorForm != null)
             {
-                for (int j = 0; j < 10; j++)
-                {
-                    writer.Write($"{array[i * 10 + j],4}");
-                }
-                writer.WriteLine();
+                writer.Write(editorForm.GetFinalOutput());
             }
+            else
+            {
+                writer.WriteLine($"Дата и время: {DateTime.Now}");
+                writer.WriteLine("=====================================\n");
 
-            writer.WriteLine("\n=====================================");
-            writer.WriteLine("Результаты вычислений:");
-            writer.WriteLine(txtResult.Text);
+                writer.WriteLine("Исходный массив (100 элементов от 2 до 22):");
+                for (int i = 0; i < 10; i++)
+                {
+                    for (int j = 0; j < 10; j++)
+                    {
+                        writer.Write($"{array[i * 10 + j],4}");
+                    }
+                    writer.WriteLine();
+                }
+
+                writer.WriteLine("\n=====================================");
+                writer.WriteLine("Результаты вычислений:");
+                writer.WriteLine(txtResult.Text);
+            }
         }
 
-        private void SaveAsPDF(string fileName)
+        private void SaveAsPDF(string fileName, ResultEditorForm editorForm = null)
         {
             try
             {
@@ -191,7 +239,15 @@ namespace MokanKonstantin
                 printDoc.PrinterSettings.PrintToFile = true;
                 printDoc.PrinterSettings.PrintFileName = fileName;
                 printDoc.DefaultPageSettings.Landscape = false;
-                printDoc.PrintPage += PrintDocument_PrintPage;
+                
+                if (editorForm != null)
+                {
+                    printDoc.PrintPage += (sender, e) => PrintDocument_PrintPageWithEditor(sender, e, editorForm);
+                }
+                else
+                {
+                    printDoc.PrintPage += PrintDocument_PrintPage;
+                }
 
                 bool pdfPrinterFound = false;
                 foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
@@ -216,16 +272,16 @@ namespace MokanKonstantin
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
 
-                    SaveAsPNG(fileName.Replace(".pdf", ".png"));
+                    SaveAsPNG(fileName.Replace(".pdf", ".png"), editorForm);
                 }
             }
             catch (Exception)
             {
-                SaveAsPNG(fileName.Replace(".pdf", ".png"));
+                SaveAsPNG(fileName.Replace(".pdf", ".png"), editorForm);
             }
         }
 
-        private void SaveAsPNG(string fileName)
+        private void SaveAsPNG(string fileName, ResultEditorForm editorForm = null)
         {
             int width = 850;
             int height = 1100;
@@ -243,6 +299,12 @@ namespace MokanKonstantin
 
                 float y = 50;
 
+                if (editorForm != null && !string.IsNullOrWhiteSpace(editorForm.CustomHeader))
+                {
+                    g.DrawString(editorForm.CustomHeader, headerFont, Brushes.Black, 50, y);
+                    y += 40;
+                }
+
                 g.DrawString("Результаты вычислений", titleFont, Brushes.Black,
                     width / 2, y, new StringFormat { Alignment = StringAlignment.Center });
                 y += 50;
@@ -250,8 +312,10 @@ namespace MokanKonstantin
                 g.DrawString($"Дата и время: {DateTime.Now}", normalFont, Brushes.Black, 50, y);
                 y += 40;
 
-                g.DrawString("Исходный массив (100 элементов от 2 до 22):", headerFont, Brushes.Black, 50, y);
-                y += 30;
+                if (editorForm == null || editorForm.IncludeArray)
+                {
+                    g.DrawString("Исходный массив (100 элементов от 2 до 22):", headerFont, Brushes.Black, 50, y);
+                    y += 30;
 
                 for (int i = 0; i < 10; i++)
                 {
@@ -273,11 +337,17 @@ namespace MokanKonstantin
                     }
                     y += 25;
                 }
+                }
 
-                y += 30;
+                if (editorForm == null || editorForm.IncludeArray)
+                {
+                    y += 30;
+                }
 
-                g.DrawString("Результаты вычислений:", headerFont, Brushes.Black, 50, y);
-                y += 30;
+                if (editorForm == null || editorForm.IncludeCalculations)
+                {
+                    g.DrawString("Результаты вычислений:", headerFont, Brushes.Black, 50, y);
+                    y += 30;
 
                 string[] lines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
                 foreach (string line in lines)
@@ -288,10 +358,20 @@ namespace MokanKonstantin
                         y += 25;
                     }
                 }
+                }
 
-                y = height - 100;
-                g.FillRectangle(Brushes.LightGreen, 50, y, 20, 15);
-                g.DrawString("- элементы на позициях 1², 2², 3²... 9²", normalFont, Brushes.Black, 75, y - 2);
+                if (editorForm != null && !string.IsNullOrWhiteSpace(editorForm.CustomFooter))
+                {
+                    y += 30;
+                    g.DrawString(editorForm.CustomFooter, normalFont, Brushes.Black, 50, y);
+                }
+
+                if (editorForm == null || editorForm.IncludeArray)
+                {
+                    y = height - 100;
+                    g.FillRectangle(Brushes.LightGreen, 50, y, 20, 15);
+                    g.DrawString("- элементы на позициях 1², 2², 3²... 9²", normalFont, Brushes.Black, 75, y - 2);
+                }
             }
 
             bitmap.Save(fileName, ImageFormat.Png);
@@ -391,6 +471,15 @@ namespace MokanKonstantin
                 return;
             }
 
+            // Show the result editor form
+            string currentResults = GetFullResultsText();
+            ResultEditorForm editorForm = new ResultEditorForm(currentResults, true, true);
+            
+            DialogResult editorResult = editorForm.ShowDialog();
+            
+            if (editorResult == DialogResult.Cancel)
+                return;
+
             var printMethod = MessageBox.Show(
                 "Выберите метод печати:\n\n" +
                 "ДА - Печать через браузер (рекомендуется)\n" +
@@ -405,7 +494,7 @@ namespace MokanKonstantin
 
             if (printMethod == DialogResult.Yes)
             {
-                PrintViaHTML();
+                PrintViaHTML(editorForm);
             }
             else
             {
@@ -417,7 +506,7 @@ namespace MokanKonstantin
                     printDoc.DocumentName = "Результаты вычислений массива";
                     printDoc.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(50, 50, 50, 50);
 
-                    printDoc.PrintPage += PrintDocument_PrintPage;
+                    printDoc.PrintPage += (sender, e) => PrintDocument_PrintPageWithEditor(sender, e, editorForm);
 
                     previewDialog.Document = printDoc;
                     previewDialog.WindowState = FormWindowState.Maximized;
@@ -437,17 +526,17 @@ namespace MokanKonstantin
                     if (MessageBox.Show("Попробовать печать через браузер?", "Альтернативный способ",
                         MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                     {
-                        PrintViaHTML();
+                        PrintViaHTML(editorForm);
                     }
                 }
             }
         }
 
-        private void PrintViaHTML()
+        private void PrintViaHTML(ResultEditorForm editorForm = null)
         {
             try
             {
-                string html = GenerateHTMLReport();
+                string html = GenerateHTMLReport(editorForm);
 
                 string tempFile = Path.Combine(Path.GetTempPath(), $"array_report_{DateTime.Now:yyyyMMddHHmmss}.html");
                 File.WriteAllText(tempFile, html);
@@ -475,7 +564,7 @@ namespace MokanKonstantin
             }
         }
 
-        private string GenerateHTMLReport()
+        private string GenerateHTMLReport(ResultEditorForm editorForm = null)
         {
             StringBuilder html = new StringBuilder();
 
@@ -496,42 +585,72 @@ namespace MokanKonstantin
             html.AppendLine("</head>");
             html.AppendLine("<body>");
 
+            if (editorForm != null && !string.IsNullOrWhiteSpace(editorForm.CustomHeader))
+            {
+                html.AppendLine($"<h2>{editorForm.CustomHeader}</h2>");
+            }
+
             html.AppendLine("<h1>Результаты вычислений массива</h1>");
             html.AppendLine($"<p><strong>Дата и время:</strong> {DateTime.Now}</p>");
             html.AppendLine($"<p><strong>Выполнил:</strong> Мокан Константин, 24 ИС</p>");
 
-            html.AppendLine("<h2>Исходный массив (100 элементов от 2 до 22)</h2>");
-            html.AppendLine("<table>");
-
-            for (int i = 0; i < 10; i++)
+            if (editorForm == null || editorForm.IncludeArray)
             {
-                html.AppendLine("<tr>");
-                for (int j = 0; j < 10; j++)
+                html.AppendLine("<h2>Исходный массив (100 элементов от 2 до 22)</h2>");
+                html.AppendLine("<table>");
+
+                for (int i = 0; i < 10; i++)
                 {
-                    int index = i * 10 + j;
-                    bool isHighlight = squaredPositions.Contains(index);
-                    string cssClass = isHighlight ? " class='highlight'" : "";
-                    html.AppendLine($"<td{cssClass}>{array[index]}</td>");
+                    html.AppendLine("<tr>");
+                    for (int j = 0; j < 10; j++)
+                    {
+                        int index = i * 10 + j;
+                        bool isHighlight = squaredPositions.Contains(index);
+                        string cssClass = isHighlight ? " class='highlight'" : "";
+                        html.AppendLine($"<td{cssClass}>{array[index]}</td>");
+                    }
+                    html.AppendLine("</tr>");
                 }
-                html.AppendLine("</tr>");
+
+                html.AppendLine("</table>");
+                html.AppendLine("<p><span style='background-color: #90EE90; padding: 2px 8px;'>Зелёным</span> выделены элементы на позициях 1², 2², 3²... 9²</p>");
             }
 
-            html.AppendLine("</table>");
-            html.AppendLine("<p><span style='background-color: #90EE90; padding: 2px 8px;'>Зелёным</span> выделены элементы на позициях 1², 2², 3²... 9²</p>");
-
-            html.AppendLine("<div class='result'>");
-            html.AppendLine("<h2>Результаты вычислений</h2>");
-
-            string[] lines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
-            foreach (string line in lines)
+            if (editorForm == null || editorForm.IncludeCalculations)
             {
-                if (!string.IsNullOrWhiteSpace(line))
+                html.AppendLine("<div class='result'>");
+                html.AppendLine("<h2>Результаты вычислений</h2>");
+
+                if (editorForm != null)
                 {
-                    html.AppendLine($"<p>{line}</p>");
+                    string[] lines = editorForm.EditedResults.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+                    foreach (string line in lines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            html.AppendLine($"<p>{line}</p>");
+                        }
+                    }
                 }
+                else
+                {
+                    string[] lines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
+                    foreach (string line in lines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            html.AppendLine($"<p>{line}</p>");
+                        }
+                    }
+                }
+
+                html.AppendLine("</div>");
             }
 
-            html.AppendLine("</div>");
+            if (editorForm != null && !string.IsNullOrWhiteSpace(editorForm.CustomFooter))
+            {
+                html.AppendLine($"<p><em>{editorForm.CustomFooter}</em></p>");
+            }
 
             html.AppendLine("</body>");
             html.AppendLine("</html>");
@@ -601,6 +720,95 @@ namespace MokanKonstantin
                     }
                 }
             }
+            e.HasMorePages = false;
+
+            string footer = $"Страница 1 - Программа: Калькулятор суммы элементов массива";
+            g.DrawString(footer, new Font("Arial", 8), Brushes.Gray,
+                x, bounds.Bottom - 20);
+        }
+
+        private void PrintDocument_PrintPageWithEditor(object sender, PrintPageEventArgs e, ResultEditorForm editorForm)
+        {
+            if (array == null || array.Length == 0)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Graphics g = e.Graphics;
+            Font font = new Font("Arial", 12);
+            Font titleFont = new Font("Arial", 16, FontStyle.Bold);
+            Font arrayFont = new Font("Courier New", 10);
+
+            Rectangle bounds = e.MarginBounds;
+            float y = bounds.Top;
+            float x = bounds.Left;
+
+            // Custom header
+            if (!string.IsNullOrWhiteSpace(editorForm.CustomHeader))
+            {
+                g.DrawString(editorForm.CustomHeader, font, Brushes.Black, x, y);
+                y += 30;
+            }
+
+            g.DrawString("Результаты вычислений", titleFont, Brushes.Black, x, y);
+            y += 40;
+
+            g.DrawString($"Дата: {DateTime.Now}", font, Brushes.Black, x, y);
+            y += 30;
+
+            // Include array if selected
+            if (editorForm.IncludeArray)
+            {
+                g.DrawString("Массив (100 элементов от 2 до 22):", font, Brushes.Black, x, y);
+                y += 25;
+
+                for (int i = 0; i < 10; i++)
+                {
+                    string line = "";
+                    for (int j = 0; j < 10; j++)
+                    {
+                        int index = i * 10 + j;
+                        line += array[index].ToString().PadLeft(4);
+                    }
+                    g.DrawString(line, arrayFont, Brushes.Black, x, y);
+                    y += 20;
+                }
+
+                y += 20;
+            }
+
+            // Include calculations if selected
+            if (editorForm.IncludeCalculations)
+            {
+                g.DrawString("Результаты вычислений:", font, Brushes.Black, x, y);
+                y += 25;
+
+                string[] resultLines = editorForm.EditedResults.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+
+                foreach (string line in resultLines)
+                {
+                    if (y > bounds.Bottom - 50)
+                    {
+                        e.HasMorePages = true;
+                        return;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        g.DrawString(line, font, Brushes.Black, x, y);
+                        y += 25;
+                    }
+                }
+            }
+
+            // Custom footer
+            if (!string.IsNullOrWhiteSpace(editorForm.CustomFooter))
+            {
+                y += 20;
+                g.DrawString(editorForm.CustomFooter, font, Brushes.Black, x, y);
+            }
+
             e.HasMorePages = false;
 
             string footer = $"Страница 1 - Программа: Калькулятор суммы элементов массива";
