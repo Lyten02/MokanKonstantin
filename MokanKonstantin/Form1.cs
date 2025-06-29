@@ -1,7 +1,6 @@
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Drawing.Printing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -186,41 +185,29 @@ namespace MokanKonstantin
         {
             try
             {
-                PrintDocument printDoc = new PrintDocument();
-                printDoc.PrinterSettings.PrinterName = "Microsoft Print to PDF";
-                printDoc.PrinterSettings.PrintToFile = true;
-                printDoc.PrinterSettings.PrintFileName = fileName;
-                printDoc.DefaultPageSettings.Landscape = false;
-                printDoc.PrintPage += PrintDocument_PrintPage;
-
-                bool pdfPrinterFound = false;
-                foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
-                {
-                    if (printer.Contains("PDF"))
-                    {
-                        pdfPrinterFound = true;
-                        break;
-                    }
-                }
-
-                if (pdfPrinterFound)
-                {
-                    printDoc.Print();
-                }
-                else
-                {
-                    MessageBox.Show(
-                        "PDF принтер не найден. Файл будет сохранен в формате PNG.\n" +
-                        "Для сохранения в PDF используйте функцию печати.",
-                        "Информация",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-
-                    SaveAsPNG(fileName.Replace(".pdf", ".png"));
-                }
+                string htmlFileName = fileName.Replace(".pdf", ".html");
+                string html = GenerateHTMLReport();
+                File.WriteAllText(htmlFileName, html);
+                
+                MessageBox.Show(
+                    $"Файл сохранен как HTML: {Path.GetFileName(htmlFileName)}\n\n" +
+                    "Для конвертации в PDF:\n" +
+                    "1. Откройте файл в браузере\n" +
+                    "2. Нажмите Ctrl+P\n" +
+                    "3. Выберите 'Сохранить как PDF'",
+                    "Файл сохранен",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                MessageBox.Show(
+                    $"Ошибка при сохранении: {ex.Message}\n" +
+                    "Файл будет сохранен как PNG.",
+                    "Ошибка",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                    
                 SaveAsPNG(fileName.Replace(".pdf", ".png"));
             }
         }
@@ -391,56 +378,7 @@ namespace MokanKonstantin
                 return;
             }
 
-            var printMethod = MessageBox.Show(
-                "Выберите метод печати:\n\n" +
-                "ДА - Печать через браузер (рекомендуется)\n" +
-                "НЕТ - Стандартная печать Windows\n\n" +
-                "Печать через браузер работает надёжнее!",
-                "Выбор метода печати",
-                MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Question);
-
-            if (printMethod == DialogResult.Cancel)
-                return;
-
-            if (printMethod == DialogResult.Yes)
-            {
-                PrintViaHTML();
-            }
-            else
-            {
-                try
-                {
-                    PrintDocument printDoc = new PrintDocument();
-                    PrintPreviewDialog previewDialog = new PrintPreviewDialog();
-
-                    printDoc.DocumentName = "Результаты вычислений массива";
-                    printDoc.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(50, 50, 50, 50);
-
-                    printDoc.PrintPage += PrintDocument_PrintPage;
-
-                    previewDialog.Document = printDoc;
-                    previewDialog.WindowState = FormWindowState.Maximized;
-                    previewDialog.UseAntiAlias = true;
-
-                    previewDialog.ShowDialog();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(
-                        $"Ошибка при печати: {ex.Message}\n\n" +
-                        "Попробуйте печать через браузер (рекомендуется)!",
-                        "Ошибка",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-
-                    if (MessageBox.Show("Попробовать печать через браузер?", "Альтернативный способ",
-                        MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        PrintViaHTML();
-                    }
-                }
-            }
+            PrintViaHTML();
         }
 
         private void PrintViaHTML()
@@ -539,74 +477,6 @@ namespace MokanKonstantin
             return html.ToString();
         }
 
-        private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
-        {
-            if (array == null || array.Length == 0)
-            {
-                e.Cancel = true;
-                return;
-            }
-
-            Graphics g = e.Graphics;
-            Font font = new Font("Arial", 12);
-            Font titleFont = new Font("Arial", 16, FontStyle.Bold);
-            Font arrayFont = new Font("Courier New", 10);
-
-            Rectangle bounds = e.MarginBounds;
-            float y = bounds.Top;
-            float x = bounds.Left;
-
-            g.DrawString("Результаты вычислений", titleFont, Brushes.Black, x, y);
-            y += 40;
-
-            g.DrawString($"Дата: {DateTime.Now}", font, Brushes.Black, x, y);
-            y += 30;
-
-            g.DrawString("Массив (100 элементов от 2 до 22):", font, Brushes.Black, x, y);
-            y += 25;
-
-            for (int i = 0; i < 10; i++)
-            {
-                string line = "";
-                for (int j = 0; j < 10; j++)
-                {
-                    int index = i * 10 + j;
-                    line += array[index].ToString().PadLeft(4);
-                }
-                g.DrawString(line, arrayFont, Brushes.Black, x, y);
-                y += 20;
-            }
-
-            y += 20;
-
-            g.DrawString("Результаты вычислений:", font, Brushes.Black, x, y);
-            y += 25;
-
-            if (!string.IsNullOrEmpty(txtResult.Text))
-            {
-                string[] resultLines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
-
-                foreach (string line in resultLines)
-                {
-                    if (y > bounds.Bottom - 50)
-                    {
-                        e.HasMorePages = true;
-                        return;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        g.DrawString(line, font, Brushes.Black, x, y);
-                        y += 25;
-                    }
-                }
-            }
-            e.HasMorePages = false;
-
-            string footer = $"Страница 1 - Программа: Калькулятор суммы элементов массива";
-            g.DrawString(footer, new Font("Arial", 8), Brushes.Gray,
-                x, bounds.Bottom - 20);
-        }
 
         private void ShowAbout()
         {
