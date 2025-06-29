@@ -188,35 +188,49 @@ namespace MokanKonstantin
         {
             try
             {
-                // Создаем HTML версию и сохраняем дополнительно
-                string htmlFileName = fileName.Replace(".pdf", ".html");
+                // Поскольку прямое сохранение в PDF недоступно, создаем HTML
                 string html = GenerateHTMLReport();
-                File.WriteAllText(htmlFileName, html);
+                string htmlFileName = fileName;
                 
-                MessageBox.Show(
-                    $"Сохранено как HTML: {Path.GetFileName(htmlFileName)}\n\n" +
-                    "Для создания PDF:\n" +
-                    "1. Откройте HTML файл в браузере\n" +
-                    "2. Нажмите Ctrl+P\n" +
-                    "3. Выберите 'Сохранить как PDF'\n\n" +
-                    "Альтернативно файл будет сохранен как PNG.",
-                    "Информация",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                // Сохраняем как HTML, но с расширением .pdf если пользователь так выбрал
+                if (fileName.EndsWith(".pdf"))
+                {
+                    htmlFileName = fileName.Replace(".pdf", ".html");
+                    File.WriteAllText(htmlFileName, html);
                     
-                // Сохраняем как PNG как альтернативу PDF
-                SaveAsPNG(fileName.Replace(".pdf", ".png"));
+                    // Открываем в браузере для конвертации в PDF
+                    var result = MessageBox.Show(
+                        $"Файл сохранен как: {Path.GetFileName(htmlFileName)}\n\n" +
+                        "Для создания настоящего PDF файла:\n" +
+                        "1. Нажмите 'Да' чтобы открыть файл в браузере\n" +
+                        "2. Нажмите Ctrl+P\n" +
+                        "3. Выберите 'Сохранить как PDF'\n\n" +
+                        "Открыть файл в браузере сейчас?",
+                        "Создание PDF",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Information);
+                        
+                    if (result == DialogResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = htmlFileName,
+                            UseShellExecute = true
+                        });
+                    }
+                }
+                else
+                {
+                    File.WriteAllText(fileName, html);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Ошибка при сохранении: {ex.Message}\n" +
-                    "Файл будет сохранен как PNG.",
+                    $"Ошибка при сохранении: {ex.Message}",
                     "Ошибка",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                    
-                SaveAsPNG(fileName.Replace(".pdf", ".png"));
+                    MessageBoxIcon.Error);
             }
         }
 
