@@ -188,41 +188,27 @@ namespace MokanKonstantin
         {
             try
             {
-                // Поскольку прямое сохранение в PDF недоступно, создаем HTML
-                string html = GenerateHTMLReport();
-                string htmlFileName = fileName;
+                // Поскольку мы не можем создать настоящий PDF без системной печати,
+                // сохраняем как PNG изображение документа
+                string pngFileName = fileName.Replace(".pdf", ".png");
+                SaveAsPNG(pngFileName);
                 
-                // Сохраняем как HTML, но с расширением .pdf если пользователь так выбрал
-                if (fileName.EndsWith(".pdf"))
-                {
-                    htmlFileName = fileName.Replace(".pdf", ".html");
-                    File.WriteAllText(htmlFileName, html);
-                    
-                    // Открываем в браузере для конвертации в PDF
-                    var result = MessageBox.Show(
-                        $"Файл сохранен как: {Path.GetFileName(htmlFileName)}\n\n" +
-                        "Для создания настоящего PDF файла:\n" +
-                        "1. Нажмите 'Да' чтобы открыть файл в браузере\n" +
-                        "2. Нажмите Ctrl+P\n" +
-                        "3. Выберите 'Сохранить как PDF'\n\n" +
-                        "Открыть файл в браузере сейчас?",
-                        "Создание PDF",
-                        MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Information);
-                        
-                    if (result == DialogResult.Yes)
-                    {
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = htmlFileName,
-                            UseShellExecute = true
-                        });
-                    }
-                }
-                else
-                {
-                    File.WriteAllText(fileName, html);
-                }
+                // Также создаем HTML версию
+                string htmlFileName = fileName.Replace(".pdf", ".html");
+                string html = GenerateHTMLReport();
+                File.WriteAllText(htmlFileName, html);
+                
+                MessageBox.Show(
+                    $"Файлы сохранены:\n" +
+                    $"• Изображение документа: {Path.GetFileName(pngFileName)}\n" +
+                    $"• HTML версия: {Path.GetFileName(htmlFileName)}\n\n" +
+                    "Для создания настоящего PDF файла:\n" +
+                    "1. Откройте HTML файл в браузере\n" +
+                    "2. Нажмите Ctrl+P\n" +
+                    "3. Выберите 'Сохранить как PDF'",
+                    "Сохранение завершено",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
