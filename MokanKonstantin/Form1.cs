@@ -190,16 +190,13 @@ namespace MokanKonstantin
         {
             try
             {
-                // Создаем PDF документ
                 PdfDocument document = new PdfDocument();
                 document.Info.Title = "Результаты вычислений массива";
                 document.Info.Author = "Мокан Константин";
                 
-                // Добавляем страницу
                 PdfPage page = document.AddPage();
                 XGraphics gfx = XGraphics.FromPdfPage(page);
                 
-                // Шрифты
                 XFont titleFont = new XFont("Arial", 20, XFontStyle.Bold);
                 XFont headerFont = new XFont("Arial", 14, XFontStyle.Bold);
                 XFont normalFont = new XFont("Arial", 12);
@@ -207,22 +204,18 @@ namespace MokanKonstantin
                 
                 double y = 50;
                 
-                // Заголовок
                 gfx.DrawString("Результаты вычислений массива", titleFont, XBrushes.Black,
                     new XRect(0, y, page.Width, 30), XStringFormats.TopCenter);
                 y += 40;
                 
-                // Информация
                 gfx.DrawString($"Дата и время: {DateTime.Now}", normalFont, XBrushes.Black, 50, y);
                 y += 20;
                 gfx.DrawString("Выполнил: Мокан Константин, 24 ИС", normalFont, XBrushes.Black, 50, y);
                 y += 30;
                 
-                // Заголовок массива
                 gfx.DrawString("Исходный массив (100 элементов от 2 до 22):", headerFont, XBrushes.Black, 50, y);
                 y += 25;
                 
-                // Рисуем таблицу с массивом
                 double cellWidth = 40;
                 double cellHeight = 20;
                 double tableX = 50;
@@ -236,20 +229,16 @@ namespace MokanKonstantin
                         double cellX = tableX + j * cellWidth;
                         double cellY = tableY + i * cellHeight;
                         
-                        // Проверяем, является ли позиция квадратной
                         bool isSquared = squaredPositions.Contains(index);
                         
-                        // Рисуем фон для квадратных позиций
                         if (isSquared)
                         {
                             gfx.DrawRectangle(new XSolidBrush(XColor.FromArgb(144, 238, 144)), 
                                 cellX, cellY, cellWidth, cellHeight);
                         }
                         
-                        // Рисуем границы ячейки
                         gfx.DrawRectangle(XPens.Black, cellX, cellY, cellWidth, cellHeight);
                         
-                        // Рисуем значение
                         string value = array[index].ToString();
                         gfx.DrawString(value, tableFont, XBrushes.Black,
                             new XRect(cellX, cellY, cellWidth, cellHeight), 
@@ -259,16 +248,13 @@ namespace MokanKonstantin
                 
                 y = tableY + 10 * cellHeight + 20;
                 
-                // Легенда
                 gfx.DrawRectangle(new XSolidBrush(XColor.FromArgb(144, 238, 144)), 50, y, 20, 15);
                 gfx.DrawString("- элементы на позициях 1², 2², 3²... 9²", normalFont, XBrushes.Black, 75, y);
                 y += 30;
                 
-                // Результаты вычислений
                 gfx.DrawString("Результаты вычислений:", headerFont, XBrushes.Black, 50, y);
                 y += 25;
                 
-                // Детали вычислений
                 if (!string.IsNullOrEmpty(txtResult.Text))
                 {
                     string[] lines = txtResult.Text.Split(new[] { "\r\n" }, StringSplitOptions.None);
@@ -278,7 +264,6 @@ namespace MokanKonstantin
                         {
                             if (y > page.Height - 50)
                             {
-                                // Добавляем новую страницу если не хватает места
                                 page = document.AddPage();
                                 gfx = XGraphics.FromPdfPage(page);
                                 y = 50;
@@ -290,7 +275,6 @@ namespace MokanKonstantin
                     }
                 }
                 
-                // Сохраняем PDF
                 document.Save(fileName);
                 
                 MessageBox.Show(
