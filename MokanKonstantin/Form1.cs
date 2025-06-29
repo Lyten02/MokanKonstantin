@@ -188,24 +188,72 @@ namespace MokanKonstantin
         {
             try
             {
-                // Поскольку мы не можем создать настоящий PDF без системной печати,
-                // сохраняем как PNG изображение документа
-                string pngFileName = fileName.Replace(".pdf", ".png");
-                SaveAsPNG(pngFileName);
+                // Создаем простой PDF файл
+                using (FileStream fs = new FileStream(fileName, FileMode.Create))
+                {
+                    // PDF header
+                    string pdfHeader = "%PDF-1.4\n";
+                    byte[] headerBytes = Encoding.ASCII.GetBytes(pdfHeader);
+                    fs.Write(headerBytes, 0, headerBytes.Length);
+                    
+                    // Создаем содержимое
+                    StringBuilder content = new StringBuilder();
+                    content.AppendLine("1 0 obj");
+                    content.AppendLine("<< /Type /Catalog /Pages 2 0 R >>");
+                    content.AppendLine("endobj");
+                    
+                    content.AppendLine("2 0 obj");
+                    content.AppendLine("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+                    content.AppendLine("endobj");
+                    
+                    content.AppendLine("3 0 obj");
+                    content.AppendLine("<< /Type /Page /Parent 2 0 R /Resources 4 0 R /MediaBox [0 0 612 792] /Contents 5 0 R >>");
+                    content.AppendLine("endobj");
+                    
+                    content.AppendLine("4 0 obj");
+                    content.AppendLine("<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >>");
+                    content.AppendLine("endobj");
+                    
+                    // Текстовое содержимое
+                    string textContent = GeneratePDFTextContent();
+                    byte[] textBytes = Encoding.UTF8.GetBytes(textContent);
+                    
+                    content.AppendLine("5 0 obj");
+                    content.AppendLine($"<< /Length {textBytes.Length} >>");
+                    content.AppendLine("stream");
+                    content.Append(textContent);
+                    content.AppendLine("endstream");
+                    content.AppendLine("endobj");
+                    
+                    content.AppendLine("xref");
+                    content.AppendLine("0 6");
+                    content.AppendLine("0000000000 65535 f");
+                    content.AppendLine("0000000009 00000 n");
+                    content.AppendLine("0000000058 00000 n");
+                    content.AppendLine("0000000115 00000 n");
+                    content.AppendLine("0000000214 00000 n");
+                    content.AppendLine("0000000312 00000 n");
+                    content.AppendLine("trailer");
+                    content.AppendLine("<< /Size 6 /Root 1 0 R >>");
+                    content.AppendLine("startxref");
+                    content.AppendLine("500");
+                    content.AppendLine("%%EOF");
+                    
+                    byte[] contentBytes = Encoding.ASCII.GetBytes(content.ToString());
+                    fs.Write(contentBytes, 0, contentBytes.Length);
+                }
                 
-                // Также создаем HTML версию
+                // Дополнительно создаем HTML версию
                 string htmlFileName = fileName.Replace(".pdf", ".html");
                 string html = GenerateHTMLReport();
                 File.WriteAllText(htmlFileName, html);
                 
                 MessageBox.Show(
                     $"Файлы сохранены:\n" +
-                    $"• Изображение документа: {Path.GetFileName(pngFileName)}\n" +
+                    $"• PDF документ: {Path.GetFileName(fileName)}\n" +
                     $"• HTML версия: {Path.GetFileName(htmlFileName)}\n\n" +
-                    "Для создания настоящего PDF файла:\n" +
-                    "1. Откройте HTML файл в браузере\n" +
-                    "2. Нажмите Ctrl+P\n" +
-                    "3. Выберите 'Сохранить как PDF'",
+                    "PDF файл создан, но для лучшего качества рекомендуется\n" +
+                    "открыть HTML в браузере и сохранить через Ctrl+P.",
                     "Сохранение завершено",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -213,11 +261,41 @@ namespace MokanKonstantin
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Ошибка при сохранении: {ex.Message}",
+                    $"Ошибка при создании PDF: {ex.Message}\n" +
+                    "Файл будет сохранен как HTML.",
                     "Ошибка",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
+                    
+                string htmlFileName = fileName.Replace(".pdf", ".html");
+                string html = GenerateHTMLReport();
+                File.WriteAllText(htmlFileName, html);
             }
+        }
+        
+        private string GeneratePDFTextContent()
+        {
+            StringBuilder pdf = new StringBuilder();
+            pdf.AppendLine("BT");
+            pdf.AppendLine("/F1 16 Tf");
+            pdf.AppendLine("50 750 Td");
+            pdf.AppendLine("(Rezultaty vychisleniy massiva) Tj");
+            pdf.AppendLine("0 -30 Td");
+            pdf.AppendLine("/F1 12 Tf");
+            pdf.AppendLine($"(Data: {DateTime.Now}) Tj");
+            pdf.AppendLine("0 -20 Td");
+            pdf.AppendLine("(Vypolnil: Mokan Konstantin, 24 IS) Tj");
+            pdf.AppendLine("0 -30 Td");
+            pdf.AppendLine("(Massiv 100 elementov ot 2 do 22) Tj");
+            pdf.AppendLine("0 -20 Td");
+            
+            if (array != null && sum > 0)
+            {
+                pdf.AppendLine($"(Summa elementov na poziciyah 1^2, 2^2...9^2: {sum}) Tj");
+            }
+            
+            pdf.AppendLine("ET");
+            return pdf.ToString();
         }
 
         private void SaveAsHTML(string fileName)
