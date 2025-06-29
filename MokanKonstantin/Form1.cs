@@ -185,17 +185,24 @@ namespace MokanKonstantin
         {
             try
             {
+                // Сохраняем HTML версию
                 string htmlFileName = fileName.Replace(".pdf", ".html");
                 string html = GenerateHTMLReport();
                 File.WriteAllText(htmlFileName, html);
                 
+                // Также сохраняем как PNG с именем PDF (как альтернатива PDF)
+                string pngFileName = fileName.Replace(".pdf", "_preview.png");
+                SaveAsPNG(pngFileName);
+                
                 MessageBox.Show(
-                    $"Файл сохранен как HTML: {Path.GetFileName(htmlFileName)}\n\n" +
-                    "Для конвертации в PDF:\n" +
-                    "1. Откройте файл в браузере\n" +
+                    $"Файлы сохранены:\n" +
+                    $"• HTML: {Path.GetFileName(htmlFileName)}\n" +
+                    $"• PNG: {Path.GetFileName(pngFileName)}\n\n" +
+                    "Для создания PDF:\n" +
+                    "1. Откройте HTML файл в браузере\n" +
                     "2. Нажмите Ctrl+P\n" +
                     "3. Выберите 'Сохранить как PDF'",
-                    "Файл сохранен",
+                    "Файлы сохранены",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
