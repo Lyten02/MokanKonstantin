@@ -125,7 +125,7 @@ namespace MokanKonstantin
             }
 
             SaveFileDialog saveDialog = new SaveFileDialog();
-            saveDialog.Filter = "PDF files (*.pdf)|*.pdf|PNG Image (*.png)|*.png|Text files (*.txt)|*.txt|All files (*.*)|*.*";
+            saveDialog.Filter = "PDF files (*.pdf)|*.pdf|HTML files (*.html)|*.html|PNG Image (*.png)|*.png|Text files (*.txt)|*.txt|All files (*.*)|*.*";
             saveDialog.DefaultExt = "pdf";
             saveDialog.FileName = $"array_sum_{DateTime.Now:yyyyMMdd_HHmmss}";
 
@@ -139,6 +139,9 @@ namespace MokanKonstantin
                     {
                         case ".pdf":
                             SaveAsPDF(saveDialog.FileName);
+                            break;
+                        case ".html":
+                            SaveAsHTML(saveDialog.FileName);
                             break;
                         case ".png":
                             SaveAsPNG(saveDialog.FileName);
@@ -185,26 +188,24 @@ namespace MokanKonstantin
         {
             try
             {
-                // Сохраняем HTML версию
+                // Создаем HTML версию и сохраняем дополнительно
                 string htmlFileName = fileName.Replace(".pdf", ".html");
                 string html = GenerateHTMLReport();
                 File.WriteAllText(htmlFileName, html);
                 
-                // Также сохраняем как PNG с именем PDF (как альтернатива PDF)
-                string pngFileName = fileName.Replace(".pdf", "_preview.png");
-                SaveAsPNG(pngFileName);
-                
                 MessageBox.Show(
-                    $"Файлы сохранены:\n" +
-                    $"• HTML: {Path.GetFileName(htmlFileName)}\n" +
-                    $"• PNG: {Path.GetFileName(pngFileName)}\n\n" +
+                    $"Сохранено как HTML: {Path.GetFileName(htmlFileName)}\n\n" +
                     "Для создания PDF:\n" +
                     "1. Откройте HTML файл в браузере\n" +
                     "2. Нажмите Ctrl+P\n" +
-                    "3. Выберите 'Сохранить как PDF'",
-                    "Файлы сохранены",
+                    "3. Выберите 'Сохранить как PDF'\n\n" +
+                    "Альтернативно файл будет сохранен как PNG.",
+                    "Информация",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
+                    
+                // Сохраняем как PNG как альтернативу PDF
+                SaveAsPNG(fileName.Replace(".pdf", ".png"));
             }
             catch (Exception ex)
             {
@@ -216,6 +217,19 @@ namespace MokanKonstantin
                     MessageBoxIcon.Warning);
                     
                 SaveAsPNG(fileName.Replace(".pdf", ".png"));
+            }
+        }
+
+        private void SaveAsHTML(string fileName)
+        {
+            try
+            {
+                string html = GenerateHTMLReport();
+                File.WriteAllText(fileName, html);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Ошибка при сохранении HTML: {ex.Message}");
             }
         }
 
